@@ -12,6 +12,7 @@ namespace TestVS
         /// アプリケーションのメイン エントリ ポイントです。
         /// </summary>
         /// test
+        /// comment master1
         [STAThread]
         static void Main()
         {
