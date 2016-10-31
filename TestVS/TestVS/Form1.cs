@@ -14,6 +14,7 @@ namespace TestVS
 {
     public partial class Form1 : Form
     {
+        //local1
         private Log LogOutput;
         D2DFigure figure;
 
