@@ -1,22 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Drawing;
-using System.Drawing.Imaging;
+﻿using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Direct2D1;
-using SharpDX.DXGI;
 
 using AlphaMode = SharpDX.Direct2D1.AlphaMode;
 using Bitmap = SharpDX.Direct2D1.Bitmap;
 using PixelFormat = SharpDX.Direct2D1.PixelFormat;
-
+using System.Windows.Forms;
 
 namespace DxLib
 {
@@ -26,6 +19,8 @@ namespace DxLib
         SharpDX.Direct3D11.Device _device;
         Texture2D _backBuffer;
         RenderTargetView _backBufferView;
+        SwapChain _swapChain;
+        
 
         public SharpDX.Direct2D1.Factory Factory2D { get; private set; }
         public RenderTarget RenderTarget2D { get; private set; }
@@ -55,8 +50,40 @@ namespace DxLib
             }
         }
 
-        public D2DFigure()
+        void Initialize(Form form)
         {
+            var DisplayHandle = form.Handle;
+            // SwapChain description
+            var desc = new SwapChainDescription()
+            {
+                BufferCount = 1,
+                ModeDescription =
+                    new ModeDescription(400, 400,
+                                        new Rational(60, 1), Format.R8G8B8A8_UNorm),
+                IsWindowed = true,
+                OutputHandle = DisplayHandle,
+                SampleDescription = new SampleDescription(1, 0),
+                SwapEffect = SwapEffect.Discard,
+                Usage = Usage.RenderTargetOutput
+            };
+
+            // Create Device and SwapChain
+            SharpDX.Direct3D11.Device.CreateWithSwapChain(DriverType.Hardware, DeviceCreationFlags.BgraSupport, new[] { SharpDX.Direct3D.FeatureLevel.Level_10_0 }, desc, out _device, out _swapChain);
+
+            // Ignore all windows events
+            SharpDX.DXGI.Factory factory = _swapChain.GetParent<SharpDX.DXGI.Factory>();
+            factory.MakeWindowAssociation(DisplayHandle, WindowAssociationFlags.IgnoreAll);
+
+            // New RenderTargetView from the backbuffer
+            _backBuffer = Texture2D.FromSwapChain<Texture2D>(_swapChain, 0);
+
+            _backBufferView = new RenderTargetView(_device, _backBuffer);
+        }
+
+        public D2DFigure(Form form)
+        {
+            Initialize(form);
+
             Factory2D = new SharpDX.Direct2D1.Factory();
 
             using (var surface = BackBuffer.QueryInterface<Surface>())
@@ -66,9 +93,11 @@ namespace DxLib
             }
             RenderTarget2D.AntialiasMode = AntialiasMode.PerPrimitive;
 
+            _bitmap = LoadFromFile(RenderTarget2D, "C:\\Users\\kishima\\Source\\Repos\\TestVS\\TestVS\\test.png");
+
         }
 
-        public static Bitmap LoadFromFile(RenderTarget renderTarget, string file)
+        public Bitmap LoadFromFile(RenderTarget renderTarget, string file)
         {
             // Loads from file using System.Drawing.Image
             using (var bitmap = (System.Drawing.Bitmap)System.Drawing.Image.FromFile(file))
@@ -110,7 +139,9 @@ namespace DxLib
 
         public void Draw()
         {
+            BeginDraw();
             RenderTarget2D.DrawBitmap(_bitmap, 1.0f, BitmapInterpolationMode.Linear);
+            EndDraw();
 
         }
 

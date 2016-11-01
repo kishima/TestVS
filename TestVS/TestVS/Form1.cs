@@ -22,12 +22,14 @@ namespace TestVS
         {
             InitializeComponent();
             LogOutput = new Log(textBox1);
-            figure = new D2DFigure();
+            figure = new D2DFigure(this);
+            //figure = new D2DFigure();
         }
 
         private void button1_Click(object sender, EventArgs e)
         {            
             LogOutput.Put("button1 is pressed");
+            
             figure.Draw();
         }
     }
